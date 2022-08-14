@@ -1,0 +1,198 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "stock.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "stock"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/cancel/transaction": {
+      "post": {
+        "operationId": "stock_CancelTransaction",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/stockPreDeductResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/stockCancelTransactionRequest"
+            }
+          }
+        ],
+        "tags": [
+          "stock"
+        ]
+      }
+    },
+    "/v1/get/stock": {
+      "post": {
+        "operationId": "stock_GetStock",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/stockStockInfo"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/stockSearchStock"
+            }
+          }
+        ],
+        "tags": [
+          "stock"
+        ]
+      }
+    },
+    "/v1/pre/deduct": {
+      "post": {
+        "operationId": "stock_PreDeduct",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/stockPreDeductResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/stockPreDeductRequest"
+            }
+          }
+        ],
+        "tags": [
+          "stock"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "stockCancelTransactionRequest": {
+      "type": "object",
+      "properties": {
+        "goodsId": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        }
+      }
+    },
+    "stockPreDeductRequest": {
+      "type": "object",
+      "properties": {
+        "goodsId": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        }
+      }
+    },
+    "stockPreDeductResponse": {
+      "type": "object",
+      "properties": {
+        "goodsId": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        }
+      }
+    },
+    "stockSearchStock": {
+      "type": "object",
+      "properties": {
+        "goodsId": {
+          "type": "string"
+        }
+      }
+    },
+    "stockStockInfo": {
+      "type": "object",
+      "properties": {
+        "goodsId": {
+          "type": "string"
+        },
+        "stockNum": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    }
+  }
+}
