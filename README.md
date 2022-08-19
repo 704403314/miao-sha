@@ -7,4 +7,4 @@
 4. 进入支付页面，如果订单被取消, 会向预库存队列添加一个数据
 5. 支付成功  扣减真实库存
 
-关键字：grpc, proto-buffer,go-redis
+相关技术栈：grpc, proto-buffer,go-redis
