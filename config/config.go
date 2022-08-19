@@ -16,7 +16,7 @@ type RedisConfig struct {
 	IdleTimeout     time.Duration `yaml:"idleTimeout"`
 	Wait            bool          `yaml:"wait"`            //wait for connection
 	MaxConnLifetime time.Duration `yaml:"maxConnLifetime"` //Active time
-	Debug           bool          `yaml:"debug"`           //debug open
+	//Debug           bool          `yaml:"debug"`           //debug open
 }
 
 type MysqlConfig struct {
