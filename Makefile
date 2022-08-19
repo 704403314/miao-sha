@@ -9,3 +9,6 @@ clientServer:
 
 unitTest:
 	cd service && go test -covermode=count -coverprofile=coverprofile.cov -run="^Test"
+
+restServer:
+	go run main.go -port 8081 -type rest
