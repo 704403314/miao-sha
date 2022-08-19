@@ -25,7 +25,7 @@ type MysqlConfig struct {
 	Database string `yaml:"database"`
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
-	//Charset      string `yaml:"charset"`
+	Charset      string `yaml:"charset"`
 	MaxIdleConns int `yaml:"maxIdleConns"`
 	MaxOpenConns int `yaml:"MaxOpenConns"`
 	//SqlLog       bool   `yaml:"sql_log"`
