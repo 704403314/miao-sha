@@ -31,12 +31,10 @@ func (self *StockService) GetStock(ctx context.Context, req *pb.SearchStock) (*p
 		log.Printf("deadline is exceeded")
 		return nil, status.Errorf(codes.DeadlineExceeded, "deadline is exceeded")
 	}
-	//rdb := common.InitClient()
 	StockNum,err := common.Get(fmt.Sprintf("real_stock_%s", goodsId))
 	if err != nil {
 		return nil, status.Errorf(codes.Unavailable, "redis get stock_%s error", goodsId)
 	}
-	//defer rdb.Close()
 	StockNum64, err := strconv.ParseInt(StockNum, 10, 64)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "stock num change to int64 error %s ", StockNum)
@@ -66,7 +64,6 @@ func (self *StockService) PreDeduct(ctx context.Context, req *pb.PreDeductReques
 	}
 
 	err = self.pushList(goodsId)
-	//err = self.decrStock(goodsId)
 
 	if err != nil {
 		err = self.delKey(goodsId, guidStr)
