@@ -124,3 +124,7 @@ func Exec(script string, key []string, arg []string) error {
 	return nil
 }
 
+func GetClient() *redis.Client {
+	return rdb
+}
+

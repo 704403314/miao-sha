@@ -3,13 +3,12 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
+	"github.com/go-redis/redis/v8"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	"log"
 	"miaosha/common"
 	"miaosha/pb"
-	"time"
 	"strconv"
 )
 
@@ -54,29 +53,33 @@ func (self *StockService) PreDeduct(ctx context.Context, req *pb.PreDeductReques
 		return nil, status.Errorf(codes.InvalidArgument, "goods id is empty %v", goodsId)
 	}
 
-	guid := uuid.New()
-	guidStr := guid.String()
-	setRes, err := common.SetNX("stock_"+goodsId, guidStr, 10*time.Second)
+	//guid := uuid.New()
+	//guidStr := guid.String()
+	//setRes, err := common.SetNX("stock_"+goodsId, guidStr, 10*time.Second)
+	////
+	//if err != nil || setRes == false {
+	//	fmt.Printf("set nx failed err:%v\n", err)
+	//	return nil, status.Errorf(codes.InvalidArgument, "set nx failed err %v ", err)
+	//}
 
-	if err != nil || setRes == false {
-		fmt.Printf("set nx failed err:%v\n", err)
-		return nil, status.Errorf(codes.InvalidArgument, "set nx failed err %v ", err)
-	}
+	//err = self.pushList(goodsId)
+	err = self.decrStock(goodsId)
 
-	err = self.pushList(goodsId)
+	//err = self.pushTransactionList(goodsId)
+	//err = self.txDecrStock(goodsId)
 
 	if err != nil {
-		err = self.delKey(goodsId, guidStr)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "del nx failed err %v ", err)
-		}
-		return nil, status.Errorf(codes.Unavailable, "deal Stock pre_stock_%s error", goodsId)
+		//err = self.delKey(goodsId, guidStr)
+		//if err != nil {
+		//	return nil, status.Errorf(codes.Internal, "del nx failed err %v ", err)
+		//}
+		return nil, status.Errorf(codes.Unavailable, "deal Stock error:%v", err)
 	}
 
-	err = self.delKey(goodsId, guidStr)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "del nx failed err %v ", err)
-	}
+	//err = self.delKey(goodsId, guidStr)
+	//if err != nil {
+	//	return nil, status.Errorf(codes.Internal, "del nx failed err %v ", err)
+	//}
 
 	res := &pb.PreDeductResponse{
 		GoodsId:  goodsId,
@@ -114,7 +117,7 @@ func (self *StockService) CancelTransaction(ctx context.Context, req *pb.CancelT
 		return nil, status.Errorf(codes.InvalidArgument, "push list failed err %v ", err)
 	}
 
-	//afterIncrVal, err := common.Incr(fmt.Sprintf("pre_stock_%s", goodsId))
+	//_, err := common.Incr(fmt.Sprintf("pre_stock_%s", goodsId))
 	//if err != nil {
 	//	log.Printf("CancelTransaction incr error: %v", err)
 	//	return nil, status.Errorf(codes.InvalidArgument, "incr error %v ", err)
@@ -131,21 +134,21 @@ func (self *StockService) CancelTransaction(ctx context.Context, req *pb.CancelT
 
 func (self *StockService) decrStock(goodsId string) error {
 	// search stock deduct pre stock
-	beforeStockStr, err := common.Get(fmt.Sprintf("pre_stock_%s", goodsId))
-	if err != nil {
-		log.Printf("get beforeStock failed err: %v", err)
-		return status.Errorf(codes.Internal, "get beforeStock  err %v ", err)
-	}
-	beforeStock64, err := strconv.ParseInt(beforeStockStr,10,64)
-	if err != nil {
-		log.Printf("incrStock strconv err:%v", err)
-		return status.Errorf(codes.Internal, "incrStock strconv err: %v ", err)
-	}
-	beforeStock32 := int32(beforeStock64)
-
-	if beforeStock32 <= 0 {
-		return status.Errorf(codes.Internal, "stock is not enough: pre_stock_%s ", goodsId)
-	}
+	//beforeStockStr, err := common.Get(fmt.Sprintf("pre_stock_%s", goodsId))
+	//if err != nil {
+	//	log.Printf("get beforeStock failed err: %v", err)
+	//	return status.Errorf(codes.Internal, "get beforeStock  err %v ", err)
+	//}
+	//beforeStock64, err := strconv.ParseInt(beforeStockStr,10,64)
+	//if err != nil {
+	//	log.Printf("incrStock strconv err:%v", err)
+	//	return status.Errorf(codes.Internal, "incrStock strconv err: %v ", err)
+	//}
+	//beforeStock32 := int32(beforeStock64)
+	//
+	//if beforeStock32 <= 0 {
+	//	return status.Errorf(codes.Internal, "stock is not enough: pre_stock_%s ", goodsId)
+	//}
 
 	PreStockNum, err := common.Decr(fmt.Sprintf("pre_stock_%s", goodsId))
 	if err != nil {
@@ -161,14 +164,14 @@ func (self *StockService) decrStock(goodsId string) error {
 }
 
 func (self *StockService) pushList(goodsId string) error {
-	listLen, err := common.LLen(fmt.Sprintf("list_stock_%s", goodsId))
+	/*listLen, err := common.LLen(fmt.Sprintf("list_stock_%s", goodsId))
 	if err != nil {
 		fmt.Printf("get len failed err:%v", err)
 		return status.Errorf(codes.InvalidArgument, "get len failed: %v", goodsId)
 	}
 	if listLen <= 0 {
 		return status.Errorf(codes.InvalidArgument, "len is empty %v ", goodsId)
-	}
+	}*/
 	list,err := common.Pop(fmt.Sprintf("list_stock_%s", goodsId))
 	if err != nil {
 		fmt.Printf("get list failed err:%v", err)
@@ -178,6 +181,81 @@ func (self *StockService) pushList(goodsId string) error {
 		fmt.Printf("list is empty:%v", err)
 		return status.Errorf(codes.InvalidArgument, "list is empty %v ", list)
 	}
+	return nil
+}
+
+func (self *StockService) pushTransactionList(goodsId string) error {
+	rdb := common.GetClient()
+	pipe := rdb.TxPipeline()
+	listLen, err := pipe.LLen(context.Background(), fmt.Sprintf("tx_list_stock_%s", goodsId)).Result()
+
+	if err != nil {
+		fmt.Printf("get len failed err:%v", err)
+		return status.Errorf(codes.InvalidArgument, "get len failed: %v", goodsId)
+	}
+	if listLen <= 0 {
+		return status.Errorf(codes.InvalidArgument, "len is empty %v ", goodsId)
+	}
+	list, err := pipe.RPop(context.Background(), fmt.Sprintf("tx_list_stock_%s", goodsId)).Result()
+	if err != nil {
+		fmt.Printf("get list failed err:%v", err)
+		return status.Errorf(codes.InvalidArgument, "get list failed err %v ", err)
+	}
+	if list == "" {
+		fmt.Printf("list is empty:%v", err)
+		return status.Errorf(codes.InvalidArgument, "list is empty %v ", list)
+	}
+	return nil
+}
+
+func (self *StockService) txDecrStock(goodsId string) error {
+
+	fn := func(tx *redis.Tx) error {
+		// 先查询下当前watch监听的key的值
+		v, err := tx.Get(context.Background(), "pre_stock_"+goodsId).Result()
+		if err != nil && err != redis.Nil {
+			return err
+		}
+
+		// 这里可以处理业务
+		fmt.Println(v)
+		beforeStock64, err := strconv.ParseInt(v,10,64)
+		if err != nil {
+			log.Printf("incrStock strconv err:%v", err)
+			return status.Errorf(codes.Internal, "incrStock strconv err: %v ", err)
+		}
+		beforeStock32 := int32(beforeStock64)
+
+		if beforeStock32 <= 0 {
+			return status.Errorf(codes.Internal, "stock is not enough: pre_stock_%s ", goodsId)
+		}
+
+
+
+		// 如果key的值没有改变的话，Pipelined函数才会调用成功
+		_, err = tx.Pipelined(context.Background(), func(pipe redis.Pipeliner) error {
+			//// 在这里给key设置最新值
+			PreStockNum, err := pipe.Decr(context.Background(), fmt.Sprintf("pre_stock_%s", goodsId)).Result()
+			if err != nil {
+				return status.Errorf(codes.Unavailable, "redis get pre_stock_%s error", goodsId)
+			}
+
+			PreStockNum32 := int32(PreStockNum)
+			if PreStockNum32 < 0 {
+				//common.SetInt32(fmt.Sprintf("pre_stock_%s", goodsId), 0)
+				return status.Errorf(codes.InvalidArgument, "pre stock num is negative %s ", PreStockNum32)
+			}
+			return nil
+		})
+		return err
+	}
+
+	err := common.GetClient().Watch(context.Background(), fn, "pre_stock_"+goodsId)
+	if err != nil {
+		log.Printf("watch  stock  err: %v", err)
+		return status.Errorf(codes.Internal, "watch  stock  err: %v", err)
+	}
+
 	return nil
 }
 
