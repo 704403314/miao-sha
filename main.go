@@ -44,10 +44,8 @@ func main() {
 		// rest server
 		fmt.Printf("start rest server:%s", address)
 		mux := runtime.NewServeMux()
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
 
-		err = pb.RegisterStockHandlerServer(ctx, mux, stockService)
+		err = pb.RegisterStockHandlerServer(context.Background(), mux, stockService)
 		if err != nil {
 			log.Fatal("register rest handle error: ", err)
 		}
