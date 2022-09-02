@@ -26,7 +26,7 @@ func (self *StockService) GetStock(ctx context.Context, req *pb.SearchStock) (*p
 	if goodsId == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "goods id is empty %v", goodsId)
 	}
-	
+
 	StockNum,err := common.Get(fmt.Sprintf("real_stock_%s", goodsId))
 	if err != nil {
 		return nil, status.Errorf(codes.Unavailable, "redis get stock_%s error", goodsId)

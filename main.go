@@ -13,23 +13,29 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
+	_ "net/http/pprof"
+	run "runtime"
 )
 
 func main() {
-	logFile, err := os.OpenFile("./log/stock.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-	if err != nil {
-		log.Fatal("set log file error: ", err)
+	run.SetBlockProfileRate(1)
+	go func() {
+		http.ListenAndServe(":8100", nil)
+	}()
+
+
+	if err := setLogPath(); err != nil {
+		log.Fatal("cannot set log file path: ", err)
 	}
-	log.SetOutput(logFile)
 
 	port := flag.Int("port", 0, "the server port")
 	serverType := flag.String("type", "grpc", "the server type")
 	flag.Parse()
-
+	// register service
 	stockService := service.NewStockService()
 	grpcServer := grpc.NewServer()
 	pb.RegisterStockServer(grpcServer, stockService)
-
+	// listen connection
 	address := fmt.Sprintf("0.0.0.0:%d", *port)
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
@@ -54,5 +60,17 @@ func main() {
 	if err != nil {
 		log.Fatal("can not start server: ", err)
 	}
+}
+
+func setLogPath() error {
+	if err := os.MkdirAll("./log", 0777); err != nil {
+		return err
+	}
+	logFile, err := os.OpenFile("./log/stock.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+	log.SetOutput(logFile)
+	return nil
 }
 
