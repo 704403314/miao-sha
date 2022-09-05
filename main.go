@@ -31,10 +31,12 @@ func main() {
 	port := flag.Int("port", 0, "the server port")
 	serverType := flag.String("type", "grpc", "the server type")
 	flag.Parse()
+
 	// register service
 	stockService := service.NewStockService()
 	grpcServer := grpc.NewServer()
 	pb.RegisterStockServer(grpcServer, stockService)
+
 	// listen connection
 	address := fmt.Sprintf("0.0.0.0:%d", *port)
 	listener, err := net.Listen("tcp", address)
